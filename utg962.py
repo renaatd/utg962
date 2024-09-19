@@ -23,11 +23,14 @@ class Utg962:
     def __init__(self):
         """Connect to the first UTG962 device found."""
         rm = pyvisa.ResourceManager()
-        all_utg962 = rm.list_resources("USB0::0x6656::0x0834::?*")
-        if len(all_utg962) == 0:
-            print("No UTG962 devices found")
-            exit()
-        self.inst = rm.open_resource(all_utg962[0])
+        self.inst = None
+        for pattern in ["?*::0x6656::0x0834::?*", "?*::26198::2100::?*"]:
+            all_utg962 = rm.list_resources(pattern)
+            if len(all_utg962) != 0:
+                self.inst = rm.open_resource(all_utg962[0])
+                break
+        if not self.inst:
+            raise UtgError("No UTG962 devices found")
 
     def reset(self) -> None:
         """Reset the UTG962 to factory defaults."""
@@ -109,9 +112,7 @@ class Utg962:
             f":CHAN{channel}:BASE:WAV ARB;" + f":CHAN{channel}:ARB:SOUR EXT"
         )
         if self.inst.query(f":CHAN{channel}:ARB:SOUR?")[:3] != "EXT":
-            raise UtgError(
-                "Setting ARB can only after at least one waveform is loaded"
-            )
+            raise UtgError("Setting ARB can only after at least one waveform is loaded")
         self.inst.write(
             f":CHAN{channel}:ARB:IND {arb_index};"
             + f":CHAN{channel}:BASE:FREQ {frequency};"
