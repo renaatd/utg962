@@ -68,7 +68,7 @@ class Utg962:
 
         Note: the channels might temporarily change mode during the upload.
         """
-        self._check_arb_index(arb_index)
+        self._validate_arb_index(arb_index)
         if min(data) < -1.0 or max(data) > 1.0:
             raise UtgError("Data points must be in the range -1.0...+1.0")
         data_length = len(data)
@@ -114,8 +114,9 @@ class Utg962:
         min: minimum voltage of the waveform, corresponding with -1.0
         max: maximum voltage of the waveform, corresponding with +1.0
         """
-        self._check_channel(channel)
-        self._check_arb_index(arb_index)
+        self._validate_channel(channel)
+        self._validate_arb_index(arb_index)
+        self._validate_frequency(10e6, frequency)
         self.inst.write(
             f":CHAN{channel}:BASE:WAV ARB;" + f":CHAN{channel}:ARB:SOUR EXT"
         )
@@ -132,7 +133,8 @@ class Utg962:
 
     def set_sine(self, channel: int, frequency: float, low: float, high: float) -> None:
         """Set a channel to a sine wave and enable the output."""
-        self._check_channel(channel)
+        self._validate_channel(channel)
+        self._validate_frequency(60e6, frequency)
         self.inst.write(
             f":CHAN{channel}:BASE:WAV SIN;"
             + f":CHAN{channel}:BASE:FREQ {frequency};"
@@ -151,7 +153,8 @@ class Utg962:
         duty_cycle: float = 50.0,
     ) -> None:
         """Set a channel to a square wave and enable the output."""
-        self._check_channel(channel)
+        self._validate_channel(channel)
+        self._validate_frequency(20e6, frequency)
         self.inst.write(
             f":CHAN{channel}:BASE:WAV SQU;"
             + f":CHAN{channel}:BASE:FREQ {frequency};"
@@ -164,14 +167,18 @@ class Utg962:
 
     def set_output(self, channel: int, on: bool) -> None:
         """Enable or disable the output of a channel."""
-        self._check_channel(channel)
+        self._validate_channel(channel)
         state = "ON" if on else "OFF"
         self.inst.write(f":CHAN{channel}:OUTP {state};:SYSTEM:LOCK OFF")
 
-    def _check_channel(self, channel: int) -> None:
+    def _validate_channel(self, channel: int) -> None:
         if channel not in [1, 2]:
             raise UtgError("Channel must be 1 or 2")
 
-    def _check_arb_index(self, arb_index: int) -> None:
+    def _validate_frequency(self, limit: float, frequency: float) -> None:
+        if frequency < 0 or frequency > limit:
+            raise UtgError(f"Frequency must be in range 0-{limit} Hz")
+
+    def _validate_arb_index(self, arb_index: int) -> None:
         if arb_index not in [0, 1]:
             raise UtgError("ARB index must be 0 or 1")
