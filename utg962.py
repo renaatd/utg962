@@ -131,6 +131,23 @@ class Utg962:
             + f":SYSTEM:LOCK OFF"
         )
 
+    def set_ramp(
+        self, channel: int, frequency: float, low: float, high: float, symmetry: float
+    ) -> None:
+        """Set a channel to a ramp (sawtooth) and enable the output."""
+        self._validate_channel(channel)
+        self._validate_frequency(400e3, frequency)
+        self._validate_symmetry(symmetry)
+        self.inst.write(
+            f":CHAN{channel}:BASE:WAV RAMP;"
+            + f":CHAN{channel}:BASE:FREQ {frequency};"
+            + f":CHAN{channel}:BASE:LOW {low};"
+            + f":CHAN{channel}:BASE:HIGH {high};"
+            + f":CHAN{channel}:RAMP:SYMM {symmetry};"
+            + f":CHAN{channel}:OUTP ON;"
+            + f":SYSTEM:LOCK OFF"
+        )
+
     def set_sine(self, channel: int, frequency: float, low: float, high: float) -> None:
         """Set a channel to a sine wave and enable the output."""
         self._validate_channel(channel)
@@ -171,6 +188,10 @@ class Utg962:
         state = "ON" if on else "OFF"
         self.inst.write(f":CHAN{channel}:OUTP {state};:SYSTEM:LOCK OFF")
 
+    def _validate_arb_index(self, arb_index: int) -> None:
+        if arb_index not in [0, 1]:
+            raise UtgError("ARB index must be 0 or 1")
+
     def _validate_channel(self, channel: int) -> None:
         if channel not in [1, 2]:
             raise UtgError("Channel must be 1 or 2")
@@ -179,6 +200,6 @@ class Utg962:
         if frequency < 0 or frequency > limit:
             raise UtgError(f"Frequency must be in range 0-{limit} Hz")
 
-    def _validate_arb_index(self, arb_index: int) -> None:
-        if arb_index not in [0, 1]:
-            raise UtgError("ARB index must be 0 or 1")
+    def _validate_symmetry(self, symmetry: float) -> None:
+        if symmetry < 0 or symmetry > 100:
+            raise UtgError(f"Symmetry must be in range 0-100%")
