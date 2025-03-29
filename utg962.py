@@ -34,6 +34,10 @@ class Utg962:
                 break
         if not self.inst:
             raise UtgError("No UTG962 devices found")
+    
+    def close(self) -> None:
+        """Close the connection to the UTG962."""
+        self.inst.close()
 
     def reset(self) -> None:
         """Reset the UTG962 to factory defaults."""
