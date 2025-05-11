@@ -1,5 +1,5 @@
 import sys
-from utg962 import Utg962
+from src.utg962 import Utg962
 
 if len(sys.argv) not in [5, 6]:
     print("Syntax: square <channel> <frequency> <low> <high> [<duty>]", file=sys.stderr)
