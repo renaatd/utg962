@@ -1,5 +1,5 @@
 import sys
-from utg962 import Utg962
+from src.utg962 import Utg962
 
 if len(sys.argv) != 2:
     print(
