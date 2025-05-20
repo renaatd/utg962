@@ -27,5 +27,8 @@ Channel 1: set this staircase waveform, 1 kHz, from 1V to 5V
 python utg962/set_arb.py 1 0 1000 1 5
 ```
 
+## Thanks
+- Stepan Urban, various contributions
+
 ## See also
 - Jarjuk's [UTG900](https://github.com/jarjuk/UTG900) and [ebench](https://github.com/jarjuk/ebench)
