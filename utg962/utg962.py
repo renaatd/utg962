@@ -34,7 +34,7 @@ class Utg962:
                 break
         if not self.inst:
             raise UtgError("No UTG962 devices found")
-    
+
     def close(self) -> None:
         """Close the connection to the UTG962."""
         self.inst.close()
@@ -84,7 +84,7 @@ class Utg962:
     def get_system_brightness(self) -> int:
         """Query the brightness of the system backlight."""
         return int(self.inst.query(":SYSTEM:BRIGHTNESS?").strip())
-    
+
     def set_system_sleep(self, minutes: int) -> None:
         """Set the brightness of the system backlight."""
         if minutes not in [1, 5, 15, 30, 60]:
@@ -136,7 +136,7 @@ class Utg962:
             img.save(filename)
 
     def load_arb_from_list(
-        self, channel: int, arb_index: int, arb_name: str, data: List[float]
+        self, arb_index: int, arb_name: str, data: List[float]
     ) -> None:
         """Load an arbitrary waveform in the UTG962 at the specified index.
 
@@ -146,7 +146,6 @@ class Utg962:
 
         Note: the channels might temporarily change mode during the upload.
         """
-        self._validate_channel(channel)
         self._validate_arb_index(arb_index)
         if min(data) < -1.0 or max(data) > 1.0:
             raise UtgError("Data points must be in the range -1.0...+1.0")
@@ -161,17 +160,19 @@ class Utg962:
         data_intro = bytes(f"[DATA]:{data_length}\r\n", "ascii")
 
         # Channels might switch to ARB when uploading a waveform via :WARB. Save the current mode.
-        wav_chan = self.inst.query(f":CHAN{channel}:BASE:WAV?")
+        wav_chan1 = self.inst.query(f":CHAN1:BASE:WAV?")
+        wav_chan2 = self.inst.query(f":CHAN2:BASE:WAV?")
 
         self.inst.write(f":WARB{arb_index+1}:CARRIER {arb_name}")
         self.inst.write_raw(
             self.ARB_HEADER_INTRO + self.ARB_HEADER + data_intro + binary_data
         )
         # Restore the mode for both channels. Doing this in one write seems to be unreliable.
-        self.inst.write(f":CHAN{channel}:BASE:WAV {wav_chan}")
+        self.inst.write(f":CHAN1:BASE:WAV {wav_chan1}")
+        self.inst.write(f":CHAN2:BASE:WAV {wav_chan2}")
         self.inst.write(":SYSTEM:LOCK OFF")
 
-    def load_arb_from_file(self, channel: int, arb_index: int, arb_name: str, filename: str) -> None:
+    def load_arb_from_file(self, arb_index: int, arb_name: str, filename: str) -> None:
         """Load an arbitrary waveform from a text file in the UTG962.
 
         arb_index: index of the waveform in the UTG962 memory, 0 or 1
@@ -180,7 +181,7 @@ class Utg962:
         with open(filename, "r") as f:
             lines = f.readlines()
         data = [float(line.strip()) for line in lines if not line.startswith("#")]
-        self.load_arb_from_list(channel, arb_index, arb_name, data)
+        self.load_arb_from_list(arb_index, arb_name, data)
 
     def set_arb(
         self, channel: int, arb_index: int, frequency: float, low: float, high: float

@@ -14,17 +14,17 @@ utg962 is a simple Python module to control some features of a UNI-T UTG962E
 ## Examples
 Channel 2: output a sine wave, 10 kHz, amplitude 5V
 ```
-python sine.py 2 10000 -5 5
+python utg962/sine.py 2 10000 -5 5
 ```
 
 Load the staircase waveform from stair.txt in slot #0
 ```
-python load_arb.py 0 staircase stair.txt
+python utg962/load_arb.py 0 staircase stair.txt
 ```
 
 Channel 1: set this staircase waveform, 1 kHz, from 1V to 5V
 ```
-python set_arb.py 1 0 1000 1 5
+python utg962/set_arb.py 1 0 1000 1 5
 ```
 
 ## See also

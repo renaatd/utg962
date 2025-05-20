@@ -1,5 +1,5 @@
 import sys
-from src.utg962 import Utg962
+from utg962 import Utg962
 
 if len(sys.argv) != 6:
     print("Syntax: set_arb <channel> <index> <frequency> <low> <high>", file=sys.stderr)
