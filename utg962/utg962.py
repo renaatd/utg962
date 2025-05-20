@@ -34,14 +34,88 @@ class Utg962:
                 break
         if not self.inst:
             raise UtgError("No UTG962 devices found")
-    
+
     def close(self) -> None:
         """Close the connection to the UTG962."""
         self.inst.close()
 
+    def get_idn(self) -> str:
+        """Query the manufacturer name, signal source model, product serial number, and software version."""
+        return self.inst.query("*IDN?").strip()
+
     def reset(self) -> None:
-        """Reset the UTG962 to factory defaults."""
-        self.inst.write("*RST;:SYSTEM:LOCK OFF")
+        """Restore factory settings, clear all error messages, and send/receive queue buffers."""
+        self.inst.write("*RST")
+
+    def set_system_lock(self, lock: bool) -> None:
+        """Lock or unlock the full keyboard keys and touch input."""
+        state = "ON" if lock else "OFF"
+        self.inst.write(f":SYSTEM:LOCK {state}")
+
+    def get_system_lock(self) -> bool:
+        """Query the full keyboard lock status."""
+        return self.inst.query(":SYSTEM:LOCK?").strip() == "1"
+
+    def set_system_language(self, language: str) -> None:
+        """Set the system language."""
+        if language.upper() not in ["ENGLISH", "CHINESE"]:
+            raise UtgError("Language must be 'ENGLISH' or 'CHINESE'")
+        self.inst.write(f":SYSTEM:LANGUAGE {language.upper()}")
+
+    def get_system_language(self) -> str:
+        """Query the system language."""
+        return self.inst.query(":SYSTEM:LANGUAGE?").strip()
+
+    def set_system_beep(self, beep: bool) -> None:
+        """Enable or disable the system buzzer."""
+        state = "ON" if beep else "OFF"
+        self.inst.write(f":SYSTEM:BEEP {state}")
+
+    def get_system_beep(self) -> bool:
+        """Query the system buzzer status."""
+        return self.inst.query(":SYSTEM:BEEP?").strip() == "1"
+
+    def set_system_brightness(self, brightness: int) -> None:
+        """Set the brightness of the system backlight."""
+        if brightness not in [10, 30, 50, 70, 90, 100]:
+            raise UtgError("Brightness must be one of [10, 30, 50, 70, 90, 100]")
+        self.inst.write(f":SYSTEM:BRIGHTNESS {brightness}")
+
+    def get_system_brightness(self) -> int:
+        """Query the brightness of the system backlight."""
+        return int(self.inst.query(":SYSTEM:BRIGHTNESS?").strip())
+
+    def set_system_sleep(self, minutes: int) -> None:
+        """Set the brightness of the system backlight."""
+        if minutes not in [1, 5, 15, 30, 60]:
+            raise UtgError("Sleep must be one of [1, 5, 15, 30, 60]")
+        self.inst.write(f":SYSTEM:SLEEP:TIME {minutes}")
+
+    def get_system_sleep(self) -> int:
+        """Query the sleep time of the system"""
+        return int(self.inst.query(":SYSTEM:SLEEP:TIME?").strip())
+
+    def set_channel_output(self, channel: int, on: bool) -> None:
+        """Enable or disable the output of a specified channel."""
+        self._validate_channel(channel)
+        state = "ON" if on else "OFF"
+        self.inst.write(f":CHAN{channel}:OUTP {state}")
+
+    def get_channel_output(self, channel: int) -> bool:
+        """Query the output status of a specified channel."""
+        self._validate_channel(channel)
+        return self.inst.query(f":CHAN{channel}:OUTP?").strip() == "1"
+
+    def set_channel_inversion(self, channel: int, invert: bool) -> None:
+        """Enable or disable the inversion of a specified channel."""
+        self._validate_channel(channel)
+        state = "ON" if invert else "OFF"
+        self.inst.write(f":CHAN{channel}:INVERSION {state}")
+
+    def get_channel_inversion(self, channel: int) -> bool:
+        """Query the inversion status of a specified channel."""
+        self._validate_channel(channel)
+        return self.inst.query(f":CHAN{channel}:INVERSION?").strip() == "1"
 
     def save_display(self, filename: str) -> None:
         """Save the display of the UTG962 in a format supported by PIL, e.g. PNG/BMP/TIFF."""
@@ -86,8 +160,8 @@ class Utg962:
         data_intro = bytes(f"[DATA]:{data_length}\r\n", "ascii")
 
         # Channels might switch to ARB when uploading a waveform via :WARB. Save the current mode.
-        wav_chan1 = self.inst.query(":CHAN1:BASE:WAV?")
-        wav_chan2 = self.inst.query(":CHAN2:BASE:WAV?")
+        wav_chan1 = self.inst.query(f":CHAN1:BASE:WAV?")
+        wav_chan2 = self.inst.query(f":CHAN2:BASE:WAV?")
 
         self.inst.write(f":WARB{arb_index+1}:CARRIER {arb_name}")
         self.inst.write_raw(
@@ -115,8 +189,8 @@ class Utg962:
         """Set a channel to an arbitrary waveform (previously loaded) and enable the output.
 
         arb_index: index of the waveform in the UTG962 memory, 0 or 1
-        min: minimum voltage of the waveform, corresponding with -1.0
-        max: maximum voltage of the waveform, corresponding with +1.0
+        low: minimum voltage of the waveform, corresponding with -1.0. Low doesn't work for values < 0.0
+        high: maximum voltage of the waveform, corresponding with +1.0
         """
         self._validate_channel(channel)
         self._validate_arb_index(arb_index)
